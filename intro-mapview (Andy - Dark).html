@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Web Mapping for Flood Risk Mitigation in Halifax</title>
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+    #title {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(30, 30, 30, 0.9);
+      padding: 12px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffffff;
+      text-align: center;
+    }
+    .esri-popup__main-container {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .esri-popup__header {
+      background: #005f73;
+      color: white;
+      border-radius: 8px 8px 0 0;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .esri-popup__content {
+      padding: 12px;
+      font-size: 14px;
+      color: #333;
+    }
+    .esri-popup__footer {
+      background: #f8f9fa;
+      border-radius: 0 0 8px 8px;
+      padding: 12px;
+    }
+  </style>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css" />
+  <script src="https://js.arcgis.com/4.31/"></script>
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/Search",
+      "esri/widgets/ScaleBar",
+      "esri/widgets/BasemapToggle",
+      "esri/widgets/LayerList"
+    ], (Map, MapView, FeatureLayer, Legend, Search, ScaleBar, BasemapToggle, LayerList) => {
+
+      // Create the map object with a dark basemap
+      const map = new Map({
+        basemap: "dark-gray-vector"
+      });
+
+      // Create the MapView object
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        zoom: 12,
+        center: [-63.57398, 44.65113] // Halifax harbour
+      });
+
+      // Add feature layers
+      const featureLayers = [
+        new FeatureLayer({
+          url: "https://services1.arcgis.com/DwLTn0u9VBSZvUPe/arcgis/rest/services/Flood_risk_zones/FeatureServer",
+          title: "Flood Risk Zones",
+          renderer: {
+            type: "simple",
+            symbol: {
+              type: "simple-fill",
+              color: "rgba(255, 0, 0, 0.5)", // Semi-transparent red for flood risk zones
+              outline: { color: "white", width: 1 }
+            }
+          },
+          popupTemplate: {
+            title: "Flood Risk Zone",
+            content: [
+              {
+                type: "fields",
+                fieldInfos: [
+                  {
+                    fieldName: "Risk_Level",
+                    label: "Risk Level",
+                    visible: true
+                  },
+                  {
+                    fieldName: "Description",
+                    label: "Description",
+                    visible: true
+                  }
+                ]
+              }
+            ]
+          }
+        }),
+        new FeatureLayer({
+          url: "https://services1.arcgis.com/DwLTn0u9VBSZvUPe/arcgis/rest/services/Buildings_in_Halifax/FeatureServer",
+          title: "Buildings in Halifax",
+          popupTemplate: {
+            title: "Building",
+            content: [
+              {
+                type: "fields",
+                fieldInfos: [
+                  {
+                    fieldName: "Name",
+                    label: "Name",
+                    visible: true
+                  },
+                  {
+                    fieldName: "Type",
+                    label: "Type",
+                    visible: true
+                  },
+                  {
+                    fieldName: "Address",
+                    label: "Address",
+                    visible: true
+                  }
+                ]
+              }
+            ]
+          }
+        }),
+        new FeatureLayer({
+          url: "https://services1.arcgis.com/DwLTn0u9VBSZvUPe/arcgis/rest/services/Street/FeatureServer",
+          title: "Streets",
+          popupTemplate: {
+            title: "Street",
+            content: [
+              {
+                type: "fields",
+                fieldInfos: [
+                  {
+                    fieldName: "Name",
+                    label: "Name",
+                    visible: true
+                  },
+                  {
+                    fieldName: "Type",
+                    label: "Type",
+                    visible: true
+                  },
+                  {
+                    fieldName: "Length",
+                    label: "Length (km)",
+                    visible: true
+                  }
+                ]
+              }
+            ]
+          }
+        }),
+        new FeatureLayer({
+          url: "https://services1.arcgis.com/DwLTn0u9VBSZvUPe/arcgis/rest/services/Water_Catch_basins/FeatureServer",
+          title: "Water Catch Basins",
+          popupTemplate: {
+            title: "Water Catch Basin",
+            content: [
+              {
+                type: "fields",
+                fieldInfos: [
+                  {
+                    fieldName: "Type",
+                    label: "Type",
+                    visible: true
+                  },
+                  {
+                    fieldName: "Capacity",
+                    label: "Capacity (m³)",
+                    visible: true
+                  }
+                ]
+              }
+            ]
+          }
+        })
+      ];
+
+      featureLayers.forEach(layer => map.layers.add(layer));
+
+      // Add a legend
+      const legend = new Legend({
+        view: view
+      });
+      view.ui.add(legend, "bottom-left");
+
+      // Add a search widget
+      const search = new Search({
+        view: view
+      });
+      view.ui.add(search, "top-right");
+
+      // Add a scale bar
+      const scaleBar = new ScaleBar({
+        view: view
+      });
+      view.ui.add(scaleBar, "bottom-right");
+
+      // Add a basemap toggle widget
+      const basemapToggle = new BasemapToggle({
+        view: view,
+        nextBasemap: "satellite"
+      });
+      view.ui.add(basemapToggle, "bottom-right");
+
+      // Add a layer list widget
+      const layerList = new LayerList({
+        view: view
+      });
+      view.ui.add(layerList, "top-left");
+
+      // Add a title to the map
+      const title = document.createElement("div");
+      title.id = "title";
+      title.textContent = "Halifax Flood Risk Assessment & Mitigation Map";
+      view.ui.add(title, "manual");
+
+    });
+  </script>
+</head>
+<body>
+  <div id="viewDiv"></div>
+</body>
+</html>
